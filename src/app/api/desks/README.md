@@ -26,9 +26,9 @@ This folder contains the following apis
 Retrieves all term desk assignments with detailed information.
 
 **Query Parameters:**
-- `year` (optional): Academic year to filter by (format: "2024-2025")
-- `term_or_break` (optional): Specific term to filter by (e.g., "Fall", "Spring")
-- `desk` (optional): Filter by specific desk name
+- `year` (optional): Academic year (format: "2024")
+- `term_or_break` (optional): Specific term to filter ("Fall Term", "Spring Break")
+- `desk` (optional): Filter by specific desk name ("Jmc", "Circ)
 
 
 #### POST `/api/desks/term`
@@ -64,9 +64,9 @@ Creates a new term desk assignment with associated slots and shifts.
 Exports term desk schedule as an Excel file.
 
 **Query Parameters:**
-- `year` (required): Academic year (format: "2024-2025")
-- `term_or_break` (required): Specific term (e.g., "Fall", "Spring")
-- `desk` (required): Desk name to export
+- `year` (optional): Academic year (format: "2024")
+- `term_or_break` (optional): Specific term to filter ("Fall Term", "Spring Break")
+- `desk` (required): Desk name to export ("Jmc", "Circ)
 
 
 #### GET `/api/desks/term/availableStudents`
@@ -87,13 +87,9 @@ Gets students available for a specific term desk shift.
 Retrieves all interim desk assignments with detailed information.
 
 **Query Parameters:**
-- `year` (optional): Academic year to filter by (format: "2024-2025")
-- `term_or_break` (optional): Specific term to filter by (e.g., "Fall Break", "Winter Break")
-- `desk` (optional): Filter by specific desk name
-
-**Response:**
-- `200 OK`: Returns an array of interim desk objects with associated slots and shifts
-- `500 Error`: Failed to fetch desks
+- `year` (optional): Academic year (format: "2024")
+- `term_or_break` (optional): Specific term to filter ("Fall Term", "Spring Break")
+- `desk` (optional): Filter by specific desk name ("Jmc", "Circ")
 
 #### POST `/api/desks/interim`
 
@@ -127,9 +123,9 @@ Creates a new interim desk assignment with associated slots and shifts.
 Exports interim desk schedule as an Excel file.
 
 **Query Parameters:**
-- `year` (required): Academic year (format: "2024-2025")
-- `term_or_break` (required): Specific term break (e.g., "Fall Break", "Winter Break")
-- `desk` (required): Desk name to export
+- `year` (optional): Academic year (format: "2025")
+- `term_or_break` (optional): Specific term to filter ("Fall Term", "Spring Break")
+- `desk` (required): Desk name to export ("Jmc")
 
 
 #### GET `/api/desks/interim/availableStudents`

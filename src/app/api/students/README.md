@@ -20,8 +20,8 @@ This folder contains the following apis
 #### GET `/api/students/term`
 - **Description:** Retrieves all term students with their availability slots.
 - **Query Parameters:**
-  - `year` (optional): Filter students by academic year
-  - `term_or_break` (optional): Filter students by term/break period
+  - `year` (optional): Academic year (format: "2024")
+  - `term_or_break` (optional): Specific term to filter ("Fall Term", "Spring Break")
 
 
 #### GET `/api/students/term/:id`
@@ -63,8 +63,8 @@ This folder contains the following apis
 #### GET `/api/students/interim`
 - **Description:** Retrieves all interim students with their availability slots.
 - **Query Parameters:**
-  - `year` (optional): Filter students by academic year
-  - `term_or_break` (optional): Filter students by term/break period
+  - `year` (optional): Academic year (format: "2024")
+  - `term_or_break` (optional): Specific term to filter ("Fall Term", "Spring Break")
 
 #### GET `/api/students/interim/:id`
 - **Description:** Retrieves a single interim student by ID with all their availability slots.
