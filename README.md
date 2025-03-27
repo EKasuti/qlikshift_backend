@@ -89,6 +89,22 @@ All API routes are located in `app/api/`
 | `POST`   | `/api/students/interim/`     | Upload Interim students         |
 
 
+**Desks Apis**
+
+| Method   | Endpoint                               | Description                     |
+|----------|----------------------------------------|---------------------------------|
+| `GET`    | `/api/desks/term`                      | Gets Term Desks                 |
+| `POST`   | `/api/desks/term`                      | Creates a Term Desk             |
+| `GET`    | `/api/desks/term/export`               | Exports Term Calendar           |
+| `GET`    | `/api/desks/term/availableStudents`    | Get available Term Students     |
+|----------|----------------------------------------|---------------------------------|
+| `GET`    | `/api/desks/interim`                   | Gets Interim Desk               |
+| `POST`   | `/api/desks/interim`                   | Creates a Interim Desk          |
+| `GET`    | `/api/desks/interim/export`            | Exports Interim Calendar        |
+| `GET`    | `/api/desks/interim/availableStudents` | Get available Interim Students  |
+|----------|----------------------------------------|---------------------------------|
+
+
 
 <!-- CONTRIBUTING -->
 ## Contributing
