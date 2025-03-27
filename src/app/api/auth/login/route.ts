@@ -1,41 +1,60 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { setCorsHeaders } from '@/lib/cors';
+import { verifyPassword, createSession } from '@/lib/auth';
 
-export async function POST(request: NextRequest) {
-    const origin = request.headers.get('origin')
+export async function POST(request: Request) {
     try {
         const { email, password } = await request.json();
 
+        // Validation
         if (!email || !password) {
-            return setCorsHeaders(NextResponse.json( { error: 'Email and password are required' }, { status: 400 } ), origin);
+            return NextResponse.json(
+                { error: 'Email and password are required' },
+                { status: 400 }
+            );
         }
 
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        // Get user
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .single();
 
-        if (error) {
-            return setCorsHeaders(NextResponse.json( { error: error.message }, { status: error.status || 400 } ), origin);
+        if (userError || !user) {
+            return NextResponse.json(
+                { error: 'Invalid credentials' },
+                { status: 401 }
+            );
         }
 
-        const response = setCorsHeaders(NextResponse.json(
-            {
-                user: {
-                    id: data.user?.id,
-                    email: data.user?.email,
-                    role: data.user?.role
-                },
-                session: {
-                    access_token: data.session?.access_token,
-                    refresh_token: data.session?.refresh_token,
-                    expires_at: data.session?.expires_at
-                },
-                success: true,
-            }, { status: 200 }),origin);
+        // Verify password
+        const passwordValid = await verifyPassword(password, user.password_hash);
+        if (!passwordValid) {
+            return NextResponse.json(
+                { error: 'Invalid credentials' },
+                { status: 401 }
+            );
+        }
 
-        return response;
-    } catch (err) {
-        return setCorsHeaders(NextResponse.json(
-            { error: 'Internal server error', details: err instanceof Error ? err.message : String(err) }, { status: 500 }
-        ), origin);
+        // Create session
+        const { token, expires_at } = await createSession(user.id);
+
+        return NextResponse.json({
+        user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            is_super_user: user.is_super_user
+        },
+            token,
+            expires_at
+        }, { status: 200 });
+
+    } catch (error) {
+        return NextResponse.json(
+            { error: 'Login failed', details: (error instanceof Error ? error.message : 'Unknown error') },
+            { status: 500 }
+        );
     }
 }
