@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { validateToken } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
-    const origin = request.headers.get('origin')
-
     try {
         // Look for token in Authorization header
         const authHeader = request.headers.get('Authorization')
