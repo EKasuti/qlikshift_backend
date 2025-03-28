@@ -1,7 +1,6 @@
-// app/api/auth/route.ts
-import { setCorsHeaders } from '@/lib/cors'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 import { NextRequest, NextResponse } from 'next/server'
+import { validateToken } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
     const origin = request.headers.get('origin')
@@ -11,51 +10,58 @@ export async function GET(request: NextRequest) {
         const authHeader = request.headers.get('Authorization')
         const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null
 
-        if (!token) {
-        // Fallback to cookies if header not present
-        const cookieToken = request.cookies.get('access_token')?.value
-        
-        if (!cookieToken) {
-            return setCorsHeaders(
-            NextResponse.json({ error: 'Not authenticated' }, { status: 401 }),
-            origin
-            )
+        // Validate the token against our database
+        const userId = token ? await validateToken((token) as string) : null
+
+        if (!userId) {
+            return  NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 })
         }
-    }
 
-    const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+        // Get user data from our custom users table
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select(`
+                id,
+                username,
+                email,
+                is_super_user,
+                is_email_verified,
+                created_at
+            `)
+            .eq('id', userId)
+            .single()
 
-    const { data: { user }, error } = await supabase.auth.getUser(token || undefined)
+        if (userError || !user) {
+            return  NextResponse.json({ error: 'User not found' }, { status: 404 })
+        }
 
-    if (error || !user) {
-        return setCorsHeaders( NextResponse.json({ error: 'Not authenticated' }, { status: 401 }), origin)
-    }
+        // Get active session info
+        const { data: session } = await supabase
+            .from('user_sessions')
+            .select('expires_at')
+            .eq('token', token)
+            .single()
 
-    return setCorsHeaders(
-        NextResponse.json({
+        return NextResponse.json({
             user: {
-            id: user.id,
-            email: user.email,
-            username: user.user_metadata?.username || null,
-            created_at: user.created_at,
-            role: user.role,
-            email_confirmed_at: user.email_confirmed_at,
-            last_sign_in_at: user.last_sign_in_at,
+                id: user.id,
+                email: user.email,
+                username: user.username,
+                is_super_admin: user.is_super_user || false,
+                is_email_verified: user.is_email_verified,
+                created_at: user.created_at,
+                role: user.is_super_user ? 'admin' : 'user'
             },
-        }, { status: 200 }),
-        origin
-    )
+            session: {
+                expires_at: session?.expires_at
+            }
+        }, { status: 200 })
+
     } catch (err) {
         console.error('Auth error:', err)
-        return setCorsHeaders(
-            NextResponse.json({ 
-                error: 'Internal server error',
-                details: err instanceof Error ? err.message : String(err)
-            }, { status: 500 }),
-            origin
-        )
+        return NextResponse.json({ 
+            error: 'Internal server error',
+            details: err instanceof Error ? err.message : String(err)
+        }, { status: 500 })
     }
 }
