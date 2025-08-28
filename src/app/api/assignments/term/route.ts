@@ -40,14 +40,26 @@ function isConsecutive(existing: TermShift, candidate: TermShift): boolean {
 
 // Function to update shift details
 async function updateShiftDetails(shiftId: string, updatedStudents: string[]): Promise<boolean> {
-    // console.log('DEBUG: Updated students:', updatedStudents);
+     // console.log('DEBUG: Updated students:', updatedStudents);
 
-    const { error } = await supabaseAdmin!
-        .from('term_shifts')
-        .update({ students_detailed: updatedStudents })
-        .eq('id', shiftId);
+    try {
+        const { error } = await supabaseAdmin!
+            .from('term_shifts')
+            .update({ students_detailed: updatedStudents })
+            .eq('id', shiftId)
+            .select();
 
-    return !error;
+        if (error) {
+            console.error('ERROR: Failed to update shift:', error);
+            return false;
+        }
+
+        // console.log('DEBUG: Successfully updated shift. Returned data:', data);
+        return true;
+    } catch (err) {
+        console.error('ERROR: Exception during shift update:', err);
+        return false;
+    }
 }
 
 export async function POST(request: Request) {
@@ -90,7 +102,8 @@ export async function POST(request: Request) {
             .from('term_desks')
             .select('*')
             .eq('desk_name', desk_name)
-            .eq('term_or_break', term_or_break);
+            .eq('term_or_break', term_or_break)
+            .eq('year', year);
 
         // console.log('DEBUG: Desk fetched:', desks);
 
@@ -108,7 +121,7 @@ export async function POST(request: Request) {
             .eq('desk_id', desks[0].id);
         if (slotError) throw slotError;
 
-        // console.log('DEBUG: Slots fetched:', slots);
+         // console.log('DEBUG: Slots fetched:', slots);
 
         // 4) We then create a set of all the days we need to process [Mon -Sun]
         const days = new Set((slots || []).map(slot => slot.day_of_week));
@@ -258,7 +271,8 @@ export async function POST(request: Request) {
                     const remainingSlots = Math.max(0, (shift.max_students || 1) - newAssignments.length);
                     const updatedStudents = [...newAssignments, ...Array(remainingSlots).fill('Open')];
  
-                    if (await updateShiftDetails(shift.id, updatedStudents)) {
+                    const updateSuccess = await updateShiftDetails(shift.id, updatedStudents);
+                    if (updateSuccess) {
                         shiftAssignments.set(shift.id, newAssignments);
                         assignedShiftsByDay[slot.day_of_week] = [...alreadyAssignedShifts, shift];
                         assignedSoFar++;
@@ -272,12 +286,21 @@ export async function POST(request: Request) {
                         assignedAvailabilityIds.add(studentTimeSlotKey);
                         studentAssignedTimeSlots.get(student.id)?.add(studentTimeSlotKey);
 
-                        await supabaseAdmin!.from('term_student_availability_slots')
+                        // Update availability status
+                        const { error: availabilityUpdateError } = await supabaseAdmin!
+                            .from('term_student_availability_slots')
                             .update({ scheduled_status: desk_name })
                             .eq('term_student_id', student.id)
                             .eq('day_of_week', slot.day_of_week)
                             .eq('time_slot', shiftTimeSlot);
-                    } 
+
+                        if (availabilityUpdateError) {
+                            console.error('ERROR: Failed to update availability status:', availabilityUpdateError);
+                        }
+                    } else {
+                        console.error(`ERROR: Failed to update shift details for shift ${shift.id}`);
+                        logSummary.push(`ERROR: Failed to assign ${student.preferred_name} to shift ${shift.id}`);
+                    }
                 }
             }
 
@@ -291,9 +314,14 @@ export async function POST(request: Request) {
                         .update({ assigned_shifts: student.max_shifts })
                         .eq('id', student.id);
                 } else {
-                    await supabaseAdmin!.from('term_students')
+                    const { error: studentUpdateError } = await supabaseAdmin!
+                        .from('term_students')
                         .update({ assigned_shifts: newAssignedShifts })
                         .eq('id', student.id);
+
+                    if (studentUpdateError) {
+                        console.error('ERROR: Failed to update student assigned_shifts:', studentUpdateError);
+                    }
                 }
 
                 logSummary.push(`Updated ${student.preferred_name} with +${assignedSoFar} shifts (total: ${newAssignedShifts})`);

@@ -47,8 +47,17 @@ To get a local copy up and running follow these simple example steps.
 
 * You should have node installed
   ```sh
-  npm install 
+  node -v
+  npm -v 
   ```
+* If not installed install homebrew then install node
+```sh
+  # first install homebrew (follow instructions given after installation) --> Do this in your root terminal
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  # then install node
+  brew install node
+```
+
 
 ### Installation
 
